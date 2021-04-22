@@ -225,17 +225,13 @@ while running:
                 spn[0] += scale_value / 2
                 spn[1] += scale_value / 2
             elif ev.key == pygame.K_UP:
-                if ll[1] + scale_value / 10 <= crit_coords[0]:
-                    ll[1] += vel / 10
+                ll[1] += scale_value / 10
             elif ev.key == pygame.K_DOWN:
-                if ll[1] - scale_value / 10 >= crit_coords[1]:
-                    ll[1] -= vel / 10
+                ll[1] -= scale_value / 10
             elif ev.key == pygame.K_RIGHT:
-                if ll[0] + scale_value / 10 <= crit_coords[2]:
-                    ll[0] += vel / 10
+                ll[0] += scale_value / 10
             elif ev.key == pygame.K_LEFT:
-                if ll[0] - scale_value / 10 >= crit_coords[3]:
-                    ll[0] -= vel / 10
+                ll[0] -= scale_value / 10
 
             elif ev.key == pygame.K_1:
                 l = map_layers[0]
