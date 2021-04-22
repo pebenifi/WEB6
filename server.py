@@ -8,8 +8,6 @@ apikey = "40d1649f-0493-4b70-98ba-98533de7710b"
 def get_json_data(address):
     params = {'apikey': apikey, 'geocode': address, 'format': "json"}
     r = requests.get(URL, params=params).json()
-    with open('new.json', 'w', encoding='utf-8') as f:
-        json.dump(r, f, indent=2, ensure_ascii=0)
     if int(r['response']["GeoObjectCollection"]["metaDataProperty"]["GeocoderResponseMetaData"]["found"]):
         return r
     print('Вы ввели неправильный адрес')
@@ -26,7 +24,7 @@ def get_ll(address):
         crit_coords.append(ll[1] - 600 // 2 * 0.02)
         crit_coords.append(ll[0] + 465 // 2 * 0.02)
         crit_coords.append(ll[0] - 465 // 2 * 0.02)
-        return ll, crit_coords
+        return ll
 
 
 def get_full_address(address):
