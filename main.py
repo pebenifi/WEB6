@@ -128,6 +128,7 @@ class PostIndexTumbler(pygame.sprite.Sprite):
             self.active = 1
         else:
             self.active = 0
+        button.find(box.address)
 
     def checkClicked(self, pos):
         if self.rect.x <= pos[0] <= self.rect.x + self.rect.w and self.rect.y <= pos[1] <= self.rect.y + self.rect.h:
