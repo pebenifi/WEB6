@@ -1,19 +1,23 @@
 import pygame
 import requests
 import os
-from server import get_ll
+from server import get_full_address, get_ll
 
+pygame.init()
 all_sprites = pygame.sprite.Group()
 name = 'map.png'
 URL = 'http://static-maps.yandex.ru/1.x/'
 ll = [37.530887, 55.7033118]
 l = 'sat'
 spn = [0.002, 0.002]
-lastll = [34, 34]
-size = width, height = 600, 465
 pt = ''
 scale_value = spn[0]
-pygame.init()
+size = width, height = 600, 465
+screen = pygame.display.set_mode(size)
+lastll = None
+last_spn = None
+last_pt = None
+last_l = None
 
 
 def load_image(filename, colorkey=None):
@@ -65,6 +69,34 @@ class InputBox(pygame.sprite.Sprite):
         pygame.display.flip()
 
 
+class OutputField(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(all_sprites)
+        self.image = pygame.Surface((200, 100))
+        self.image.fill((255, 255, 255))
+        self.font = pygame.font.Font('data/sans.ttf', 12)
+        self.rect = self.image.get_rect()
+        self.rect.x = width - self.image.get_width() - 10
+        self.rect.y = height - self.image.get_height() - 10
+
+    def displayText(self, text):
+        portion_of_text = 32
+        height = self.font.get_height()
+        count = 0
+        while text:
+            text_render = self.font.render(text[:portion_of_text], 0, (100, 100, 100))
+            self.image.blit(text_render, (0, height * count))
+            text = text[portion_of_text:]
+            count += 1
+
+    def freshDisplay(self):
+        self.image = pygame.Surface((200, 400))
+        self.image.fill((255, 255, 255))
+
+
+field = OutputField()
+
+
 class PushButton(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__(all_sprites)
@@ -87,11 +119,15 @@ class PushButton(pygame.sprite.Sprite):
         if self.rect.x < pos[0] < self.rect.x + self.rect.w and \
                 self.rect.y < pos[1] < self.rect.y + self.rect.h:
             return 1
+        return 0
 
     def find(self, addres):
         global ll
         global pt
-        new_ll = get_ll(addres)
+        new_ll, crit_coords = get_ll(addres)
+        address = get_full_address(addres)
+        field.freshDisplay()
+        field.displayText(address)
         if new_ll:
             ll = new_ll
             pt = f'{ll[0]},{ll[1]},pm2rdl1'
@@ -109,7 +145,7 @@ def get_image():
 
 
 def checkState():
-    return lastll != ll
+    return lastll != ll or last_pt != pt or last_spn != spn or last_l != l
 
 
 def load_image(image):
@@ -118,7 +154,9 @@ def load_image(image):
 
 
 def show_image(screen):
-    screen.blit(pygame.transform.scale(pygame.image.load('map.png'), (width, height)), (0, 0))
+    crit_coords = []
+    image = pygame.transform.scale(pygame.image.load('map.png'), (width, height))
+    screen.blit(image, (0, 0))
 
 
 def get_params():
@@ -126,10 +164,10 @@ def get_params():
 
 
 pygame.init()
-screen = pygame.display.set_mode(size)
+
 running = 1
 FPS = 10
-type_maps = ['sat', 'map', 'map,skl,trf']
+map_layers = ['sat', 'map', 'map,skl,trf']
 clock = pygame.time.Clock()
 while running:
     for ev in pygame.event.get():
@@ -151,11 +189,11 @@ while running:
             elif ev.key == pygame.K_LEFT:
                 ll[0] -= scale_value / 10
             elif ev.key == pygame.K_1:
-                l = type_maps[0]
+                l = map_layers[0]
             elif ev.key == pygame.K_2:
-                l = type_maps[1]
+                l = map_layers[1]
             elif ev.key == pygame.K_3:
-                l = type_maps[2]
+                l = map_layers[2]
             elif box.status:
                 if ev.key == pygame.K_BACKSPACE:
                     box.address = box.address[:-1]
@@ -172,10 +210,12 @@ while running:
             load_image(image)
             show_image(screen)
             lastll = ll[:]
+            last_l = l[:]
+            last_spn = spn[:]
+            last_pt = pt
     all_sprites.update()
     all_sprites.draw(screen)
     pygame.display.flip()
-    print(scale_value, spn[0])
     clock.tick(FPS)
 
-os.remove(name)
+# os.remove(name)
