@@ -18,6 +18,8 @@ lastll = None
 last_spn = None
 last_pt = None
 last_l = None
+crit_coords = [ll[0] + scale_value / 10, ll[0] - scale_value / 10,
+               ll[1] + scale_value / 10, ll[1] - scale_value / 10]
 
 
 def load_image(filename, colorkey=None):
@@ -80,7 +82,7 @@ class OutputField(pygame.sprite.Sprite):
         self.rect.y = height - self.image.get_height() - 10
 
     def displayText(self, text):
-        portion_of_text = 32
+        portion_of_text = 30
         height = self.font.get_height()
         count = 0
         while text:
@@ -94,6 +96,42 @@ class OutputField(pygame.sprite.Sprite):
         self.image.fill((255, 255, 255))
 
 
+class PostIndexTumbler(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__(all_sprites)
+        self.image = pygame.Surface((50, 50))
+        self.color = (100, 100, 100)
+        colorkey = self.image.get_at((0, 0))
+        self.image.set_colorkey(colorkey)
+        self.rect = self.image.get_rect()
+        self.rect.x = width - 215
+        self.rect.y = height - 160
+        self.icon = pygame.transform.scale(load_image('postIcon.png', -1), (30, 30))
+        self.active = 0
+
+    def update(self):
+        if self.active:
+            self.color = (255, 255, 0)
+        else:
+            self.color = (100, 100, 100)
+        print(self.color)
+        pygame.draw.circle(self.image, self.color, (self.image.get_width() // 2, self.image.get_height() // 2), 20, 0)
+        self.image.blit(self.icon,
+                        (self.rect.w // 2 - self.icon.get_width() // 2, self.rect.h // 2 - self.icon.get_height() // 2))
+
+    def changeStatus(self):
+        if self.active == 0:
+            self.active = 1
+        else:
+            self.active = 0
+        print('eve')
+
+    def checkClicked(self, pos):
+        if self.rect.x <= pos[0] <= self.rect.x + self.rect.w and self.rect.y <= pos[1] <= self.rect.y + self.rect.h:
+            self.changeStatus()
+
+
+tumbler = PostIndexTumbler()
 field = OutputField()
 
 
@@ -122,10 +160,16 @@ class PushButton(pygame.sprite.Sprite):
         return 0
 
     def find(self, addres):
+        global crit_coords
         global ll
         global pt
-        new_ll, crit_coords = get_ll(addres)
+        new_ll = get_ll(addres)
         address = get_full_address(addres)
+        crit_coords = []
+        crit_coords.append(ll[1] + (600 // 2) * scale_value)
+        crit_coords.append(ll[1] - (600 // 2) * scale_value)
+        crit_coords.append(ll[0] + (465 // 2) * scale_value)
+        crit_coords.append(ll[0] - (465 // 2) * scale_value)
         field.freshDisplay()
         field.displayText(address)
         if new_ll:
@@ -154,7 +198,6 @@ def load_image(image):
 
 
 def show_image(screen):
-    crit_coords = []
     image = pygame.transform.scale(pygame.image.load('map.png'), (width, height))
     screen.blit(image, (0, 0))
 
@@ -167,6 +210,7 @@ pygame.init()
 
 running = 1
 FPS = 10
+vel = 0.5
 map_layers = ['sat', 'map', 'map,skl,trf']
 clock = pygame.time.Clock()
 while running:
@@ -181,13 +225,18 @@ while running:
                 spn[0] += scale_value / 2
                 spn[1] += scale_value / 2
             elif ev.key == pygame.K_UP:
-                ll[1] += scale_value / 10
+                if ll[1] + scale_value / 10 <= crit_coords[0]:
+                    ll[1] += vel / 10
             elif ev.key == pygame.K_DOWN:
-                ll[1] -= scale_value / 10
+                if ll[1] - scale_value / 10 >= crit_coords[1]:
+                    ll[1] -= vel / 10
             elif ev.key == pygame.K_RIGHT:
-                ll[0] += scale_value / 10
+                if ll[0] + scale_value / 10 <= crit_coords[2]:
+                    ll[0] += vel / 10
             elif ev.key == pygame.K_LEFT:
-                ll[0] -= scale_value / 10
+                if ll[0] - scale_value / 10 >= crit_coords[3]:
+                    ll[0] -= vel / 10
+
             elif ev.key == pygame.K_1:
                 l = map_layers[0]
             elif ev.key == pygame.K_2:
@@ -199,17 +248,18 @@ while running:
                     box.address = box.address[:-1]
                 else:
                     box.address += ev.unicode
+            print(ll[0], crit_coords[2])
         elif ev.type == pygame.MOUSEBUTTONDOWN:
             box.checkClicked(ev.pos)
             if button.checkClicked(ev.pos):
                 button.find(box.address)
+            tumbler.checkClicked(ev.pos)
     if checkState():
         image = get_image()
         if image:
             screen.fill((0, 0, 0))
             load_image(image)
             show_image(screen)
-            lastll = ll[:]
             last_l = l[:]
             last_spn = spn[:]
             last_pt = pt
@@ -217,5 +267,4 @@ while running:
     all_sprites.draw(screen)
     pygame.display.flip()
     clock.tick(FPS)
-
-# os.remove(name)
+os.remove(name)
